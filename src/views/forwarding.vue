@@ -5,7 +5,7 @@
 <script>
 export default {
   name: "forwarding",
-  data(){
+  data() {
     return {
       difyLoginKey: 'console_token',
       difyConversationIdInfo: 'conversationIdInfo',
@@ -13,30 +13,78 @@ export default {
     }
   },
   methods: {
+    // 处理父页面消息
+    handleResolve(e) {
+      const {data} = e
+      // 若未传postType，则无需处理
+      if (!data.postType) return
+      switch (data.postType) {
+          // 接收应用会话选中记录
+        case 'sendConversationIdInfo':
+          const {conversationIdInfo} = data
+          localStorage.setItem(this.difyConversationIdInfo, conversationIdInfo)
+          window.parent.postMessage({
+            postType: 'setConversationIdInfoOver',
+            message: 'conversationIdInfo已设置！'
+          }, '*')
+          break;
+          // 接收应用会话对象
+        case 'sendToken':
+          const {token} = data
+          localStorage.setItem(this.difyToken, token)
+          window.parent.postMessage({
+            postType: 'setTokenOver',
+            message: 'token已设置！'
+          }, '*')
+          break;
+          // 跳转
+        case 'jump':
+          window.parent.postMessage({
+            postType: 'startJump',
+            message: '即将跳转'
+          }, '*')
+          // 解除监听
+          window.removeEventListener('message', this.handleResolve)
+          this.handleForwarding()
+          break;
+      }
+    },
     // 处理转发
-    handleForwarding(){
+    handleForwarding() {
       const queryParams = this.$route.query
       // 判断是否存在登录参数
-      if(!queryParams.loginParams) return
+      if (!queryParams.loginParams) return
       const loginKey = queryParams.loginParams
-      if(!queryParams[loginKey]) return
+      if (!queryParams[loginKey]) return
       const loginValue = queryParams[loginKey]
       // 不存在目标地址
-      if(!queryParams.path) return
-      // 判断是否存在应用会话选中记录
-      if(queryParams[this.difyConversationIdInfo]){
-        localStorage.setItem(this.difyConversationIdInfo, decodeURI(queryParams[this.difyConversationIdInfo]))
-      }
-      // 判断是否存在应用会话对象
-      if(queryParams[this.difyToken]){
-        localStorage.setItem(this.difyToken, decodeURI(queryParams[this.difyToken]))
-      }
+      if (!queryParams.path) return
       localStorage.setItem(this.difyLoginKey, loginValue)
       window.location.href = decodeURIComponent(queryParams.path)
+    },
+    // 初始化
+    init() {
+      const isIframe = window.top !== window
+      const isAfterJump = this.$route.query.isAfterJump
+      // 查看是否稍后跳转
+      if (!isAfterJump) {
+        this.handleForwarding()
+      } else {
+        // 加载至iframe中
+        if (isIframe) {
+          // 向父页面发送消息
+          window.parent.postMessage({
+            postType: 'forwardMounted',
+            message: '跳板系统已加载完成！'
+          }, '*')
+          window.addEventListener('message', this.handleResolve)
+        }
+      }
     }
-  },
+  }
+  ,
   mounted() {
-    this.handleForwarding()
+    this.init()
   }
 }
 </script>
