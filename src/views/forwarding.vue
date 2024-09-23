@@ -13,6 +13,22 @@ export default {
     }
   },
   methods: {
+    // 处理token相关对象
+    handleToken(tokenValue, code) {
+      let currentTokenObj = {}
+      // 最终设置的token对象
+      let finalTokenObj = {}
+      try {
+        currentTokenObj = JSON.parse(localStorage.getItem(this.difyToken))
+      } catch (e) {
+      }
+      // 获取当前域名的本地存储是否有token对象
+      if (currentTokenObj && Object.keys(currentTokenObj).length > 0) {
+        finalTokenObj = {...currentTokenObj}
+      }
+      finalTokenObj[code] = tokenValue
+      localStorage.setItem(this.difyToken, JSON.stringify(finalTokenObj))
+    },
     // 处理父页面消息
     handleResolve(e) {
       const {data} = e
@@ -37,6 +53,15 @@ export default {
             message: 'token已设置！'
           }, '*')
           break;
+          // 接收consoleToken
+        case 'sendConsoleToken':
+          const {consoleToken} = data
+          localStorage.setItem(this.difyLoginKey, consoleToken)
+          window.parent.postMessage({
+            postType: 'setConsoleTokenOver',
+            message: 'consoleToken已设置！'
+          })
+          break
           // 跳转
         case 'jump':
           window.parent.postMessage({
@@ -60,6 +85,10 @@ export default {
       // 不存在目标地址
       if (!queryParams.path) return
       localStorage.setItem(this.difyLoginKey, loginValue)
+      // 判断是否传入应用所需Token、应用Code
+      if (queryParams.appToken && queryParams.appCode) {
+        this.handleToken(queryParams.appToken, queryParams.appCode)
+      }
       window.location.href = decodeURIComponent(queryParams.path)
     },
     // 初始化
@@ -75,7 +104,9 @@ export default {
           // 向父页面发送消息
           window.parent.postMessage({
             postType: 'forwardMounted',
-            message: '跳板系统已加载完成！'
+            message: '跳板系统已加载完成！',
+            token: localStorage.getItem(this.difyToken) ?? "",
+            conversationIdInfo: localStorage.getItem(this.difyConversationIdInfo) ?? ""
           }, '*')
           window.addEventListener('message', this.handleResolve)
         }
