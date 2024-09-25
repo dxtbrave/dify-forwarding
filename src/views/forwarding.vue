@@ -3,6 +3,8 @@
 </template>
 
 <script>
+import {decryptAES} from "@/utils";
+
 export default {
   name: "forwarding",
   data() {
@@ -74,6 +76,22 @@ export default {
           break;
       }
     },
+    // 处理正确地址
+    handleTargetUrl(url) {
+      let newUrl = url;
+      // 使用正则表达式匹配所有的 _SLASH_ 并替换为 /#/
+      newUrl = newUrl.replace(/_SLASH_/g, '/#/');
+      // 使用正则表达式匹配所有的 _AND_ 并替换为 &
+      newUrl = newUrl.replace(/_AND_/g, '&');
+      // 使用正则表达式匹配所有的 _QUESTION_ 并替换为 ?
+      newUrl = newUrl.replace(/_QUESTION_/g, '?');
+      return newUrl;
+    },
+    // 得到正确符号
+    restorePlusSigns(inputString) {
+      // 使用正则表达式匹配所有的 _PLUS_ 并替换为 +
+      return inputString.replace(/_PLUS_/g, '+');
+    },
     // 处理转发
     handleForwarding() {
       const queryParams = this.$route.query
@@ -84,12 +102,24 @@ export default {
       const loginValue = queryParams[loginKey]
       // 不存在目标地址
       if (!queryParams.path) return
+      let targetPath = queryParams.path
+      try {
+        targetPath = decodeURIComponent(queryParams.path)
+      } catch (e) {
+      }
       localStorage.setItem(this.difyLoginKey, loginValue)
       // 判断是否传入应用所需Token、应用Code
       if (queryParams.appToken && queryParams.appCode) {
         this.handleToken(queryParams.appToken, queryParams.appCode)
       }
-      window.location.href = decodeURIComponent(queryParams.path)
+      // if (queryParams.accountId) {
+      //   // 判断地址是否已存在参数
+      //   targetPath = targetPath.indexOf('?') > -1 ? targetPath + '&accountId=' : targetPath + '?accountId='
+      //   targetPath = targetPath + queryParams.accountId
+      // }
+      targetPath = decryptAES(this.restorePlusSigns(targetPath))
+      targetPath = this.handleTargetUrl(targetPath)
+      window.location.href = targetPath
     },
     // 初始化
     init() {

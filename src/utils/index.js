@@ -1,6 +1,6 @@
 const CryptoJS = require('crypto-js')
 
-const key = CryptoJS.enc.Utf8.parse('dify_ai_0525')
+const key = CryptoJS.enc.Utf8.parse('path')
 
 export function decryptAES(word) {
     const decrypt = CryptoJS.AES.decrypt(word, key, {
