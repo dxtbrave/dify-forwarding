@@ -16,7 +16,7 @@ export default {
   },
   methods: {
     // 处理token相关对象
-    handleToken(tokenValue, code) {
+    handleToken(tokenValue, code, isClear) {
       let currentTokenObj = {}
       // 最终设置的token对象
       let finalTokenObj = {}
@@ -28,7 +28,13 @@ export default {
       if (currentTokenObj && Object.keys(currentTokenObj).length > 0) {
         finalTokenObj = {...currentTokenObj}
       }
-      finalTokenObj[code] = tokenValue
+      console.log(isClear,'isClear')
+      // 判断是否为清除操作
+      if(isClear){
+        delete finalTokenObj[code]
+      } else {
+        finalTokenObj[code] = tokenValue
+      }
       localStorage.setItem(this.difyToken, JSON.stringify(finalTokenObj))
     },
     // 处理父页面消息
@@ -109,8 +115,12 @@ export default {
       }
       localStorage.setItem(this.difyLoginKey, loginValue)
       // 判断是否传入应用所需Token、应用Code
-      if (queryParams.appToken && queryParams.appCode) {
-        this.handleToken(queryParams.appToken, queryParams.appCode)
+      if (queryParams.appCode) {
+        if(queryParams.appToken){
+          this.handleToken(queryParams.appToken, queryParams.appCode, false)
+        } else {
+          this.handleToken('', queryParams.appCode, true)
+        }
       }
       // if (queryParams.accountId) {
       //   // 判断地址是否已存在参数
