@@ -28,14 +28,32 @@ export default {
       if (currentTokenObj && Object.keys(currentTokenObj).length > 0) {
         finalTokenObj = {...currentTokenObj}
       }
-      console.log(isClear,'isClear')
       // 判断是否为清除操作
-      if(isClear){
+      if (isClear) {
         delete finalTokenObj[code]
       } else {
         finalTokenObj[code] = tokenValue
       }
       localStorage.setItem(this.difyToken, JSON.stringify(finalTokenObj))
+    },
+    // 处理当前会话记录Id相关
+    handleConversationIdInfo(val, id, isClear) {
+      let currentConversationIdInfo = {}
+      let finalConversationIdInfo = {}
+      try {
+        currentConversationIdInfo = JSON.parse(localStorage.getItem(this.difyConversationIdInfo))
+      } catch (e) {
+      }
+      if (currentConversationIdInfo && Object.keys(currentConversationIdInfo).length > 0) {
+        finalConversationIdInfo = {...currentConversationIdInfo}
+      }
+      // 判断是否为清除操作
+      if (isClear) {
+        finalConversationIdInfo[id] = ''
+      } else {
+        finalConversationIdInfo[id] = val
+      }
+      localStorage.setItem(this.difyConversationIdInfo, JSON.stringify(finalConversationIdInfo))
     },
     // 处理父页面消息
     handleResolve(e) {
@@ -116,17 +134,20 @@ export default {
       localStorage.setItem(this.difyLoginKey, loginValue)
       // 判断是否传入应用所需Token、应用Code
       if (queryParams.appCode) {
-        if(queryParams.appToken){
+        if (queryParams.appToken) {
           this.handleToken(queryParams.appToken, queryParams.appCode, false)
         } else {
           this.handleToken('', queryParams.appCode, true)
         }
       }
-      // if (queryParams.accountId) {
-      //   // 判断地址是否已存在参数
-      //   targetPath = targetPath.indexOf('?') > -1 ? targetPath + '&accountId=' : targetPath + '?accountId='
-      //   targetPath = targetPath + queryParams.accountId
-      // }
+      // 判断是否传入应用会话记录Id、应用id
+      if (queryParams.appRelateId) {
+        if (queryParams.conversationId) {
+          this.handleConversationIdInfo(queryParams.conversationId, queryParams.appRelateId, false)
+        } else {
+          this.handleConversationIdInfo(queryParams.conversationId, queryParams.appRelateId, true)
+        }
+      }
       targetPath = decryptAES(this.restorePlusSigns(targetPath))
       targetPath = this.handleTargetUrl(targetPath)
       window.location.href = targetPath
