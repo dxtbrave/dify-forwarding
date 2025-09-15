@@ -11,7 +11,8 @@ export default {
     return {
       difyLoginKey: 'console_token',
       difyConversationIdInfo: 'conversationIdInfo',
-      difyToken: 'token'
+      difyToken: 'token',
+      difyRefreshKey: 'refresh_token'
     }
   },
   methods: {
@@ -81,8 +82,9 @@ export default {
           break;
           // 接收consoleToken
         case 'sendConsoleToken':
-          const {consoleToken} = data
+          const {consoleToken, refreshToken} = data
           localStorage.setItem(this.difyLoginKey, consoleToken)
+          localStorage.setItem(this.difyRefreshKey, refreshToken)
           window.parent.postMessage({
             postType: 'setConsoleTokenOver',
             message: 'consoleToken已设置！'
@@ -118,12 +120,19 @@ export default {
     },
     // 处理转发
     handleForwarding() {
+      console.log('forwarding handleForwarding')
       const queryParams = this.$route.query
+      console.log('forwarding targetPath', queryParams)
       // 判断是否存在登录参数
       if (!queryParams.loginParams) return
       const loginKey = queryParams.loginParams
       if (!queryParams[loginKey]) return
       const loginValue = queryParams[loginKey]
+      
+      if (!queryParams.refreshParams) return
+      const refreshKey = queryParams.refreshParams
+      if (!queryParams[refreshKey]) return
+      const refreshValue = queryParams[refreshKey]
       // 不存在目标地址
       if (!queryParams.path) return
       let targetPath = queryParams.path
@@ -132,6 +141,7 @@ export default {
       } catch (e) {
       }
       localStorage.setItem(this.difyLoginKey, loginValue)
+      localStorage.setItem(this.difyRefreshKey, refreshValue)
       // 判断是否传入应用所需Token、应用Code
       if (queryParams.appCode) {
         if (queryParams.appToken) {
@@ -150,12 +160,16 @@ export default {
       }
       targetPath = decryptAES(this.restorePlusSigns(targetPath))
       targetPath = this.handleTargetUrl(targetPath)
+      console.log('forwarding targetPath', targetPath)
       window.location.href = targetPath
     },
     // 初始化
     init() {
-      const isIframe = window.top !== window
+      console.log('forwarding init')
+      const isIframe = window.top === window
       const isAfterJump = this.$route.query.isAfterJump
+      
+      console.log('forwarding postMessage')
       // 查看是否稍后跳转
       if (!isAfterJump) {
         this.handleForwarding()
@@ -163,6 +177,7 @@ export default {
         // 加载至iframe中
         if (isIframe) {
           // 向父页面发送消息
+          console.log('forwarding postMessage')
           window.parent.postMessage({
             postType: 'forwardMounted',
             message: '跳板系统已加载完成！',
@@ -176,6 +191,7 @@ export default {
   }
   ,
   mounted() {
+    console.log('forwarding mounted')
     this.init()
   }
 }
